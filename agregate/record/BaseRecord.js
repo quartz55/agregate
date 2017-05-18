@@ -1,5 +1,6 @@
 // @flow
 import '../polyfill';
+import Joi from 'joi';
 import uuid from 'uuid';
 import {Cypher as C} from '../cypher';
 import acceptsTransaction from '../util/acceptsTransaction';
@@ -17,7 +18,17 @@ type Query = ?{ [key: string]: any };
 export class BaseRecord {
     static connection: Connection;
     get connection(): Connection { return this.constructor.connection }
+    static _schema;
+    static schema() { return null; }
+    get schema () {
+        if (!this.constructor._schema) {
+            const sch = this.constructor.schema();
+            if (sch && sch.isJoi) this.constructor._schema = sch;
+            else this.constructor._schema = Joi.object(sch);
+        }
 
+        return this.constructor._schema;
+    }
     static __proxyProps: string[] = ['uuid', 'createdAt', 'updatedAt'];
 
     // $FlowFixMe
@@ -35,6 +46,13 @@ export class BaseRecord {
     }
 
     constructor(props: Object = {}, node?: neo4j.types.Node) {
+        // Schema validation
+        const result = Joi.validate(props, this.schema);
+        if (result.error) {
+            throw result.error;
+        }
+        props = result.value;
+
         Object.assign(this, R.omit(this.constructor.__proxyProps, props));
         if (node) {// $FlowFixMe
             this[s.node] = node;

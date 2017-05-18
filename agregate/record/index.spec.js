@@ -1,4 +1,5 @@
 import {Record} from './index';
+import Joi from 'joi';
 import {Connection} from '../connection';
 import {Cypher} from '../cypher';
 import chai, {expect} from 'chai';
@@ -251,6 +252,72 @@ describe('Agregate Record', () => {
             })
             await testRecord.save()
             expect(await Test.where({state: 2})).to.have.length(1)
+        })
+    })
+    describe('schema', () => {
+        it('should allow schema-less records', async () => {
+            class SchemaLess extends Test {
+                static schema() {
+                    return null;
+                }
+            }
+
+            expect(() => new SchemaLess({foo: 'baz', should: 'be', allowed: true}))
+                .to.not.throw();
+        })
+        it('should enforce an empty schema', async () => {
+            class EmptySchema extends Test {
+                static schema() {
+                    return {};
+                }
+            }
+
+            expect(() => new EmptySchema({foo: 'baz', should: 'be', allowed: true}))
+                .to.throw('not allowed');
+        })
+        it('should validate defined joi schema', async () => {
+            class ExampleSchema extends Test {
+                static schema() {
+                    return Joi.object({
+                        name: Joi.string().required(),
+                        email: Joi.string().email().required(),
+                        password: Joi.string().min(5),
+                        token: Joi.string().token(),
+                        type: Joi.string().valid('user', 'admin').required(),
+                        notes: Joi.array().items(Joi.string())
+                    }).xor('password', 'token');
+                }
+            }
+
+            expect(() => new ExampleSchema({
+                name: "User1",
+                email: "example.email@smtp.com",
+                password: "supersecret",
+                type: 'user',
+                notes: ["Today was rainy"]
+            })).to.not.throw();
+
+            expect(() => new ExampleSchema({
+                name: "Admin1",
+                email: "example.email2@smtp.com",
+                token: "asAS_sda102A_as2_s",
+                type: 'admin',
+            })).to.not.throw();
+
+            expect(() => new ExampleSchema({
+                name: "Admin1",
+                email: "example.email2@smtp.com",
+                password: "supersecret",
+                token: "asAS_sda102A_as2_s",
+                type: 'admin',
+            })).to.throw();
+
+            expect(() => new ExampleSchema({
+                name: "Admin1",
+                email: "example.email2@smtp.com",
+                token: "asAS_sda102A_as2_s",
+                type: 'invalid',
+            })).to.throw('type');
         })
     })
 })
