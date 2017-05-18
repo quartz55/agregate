@@ -24,7 +24,7 @@ export class BaseRecord {
         if (!this.constructor._schema) {
             const sch = this.constructor.schema();
             if (sch && sch.isJoi) this.constructor._schema = sch;
-            else this.constructor._schema = Joi.object(sch);
+            else this.constructor._schema = Joi.object(sch).unknown(true);
         }
 
         return this.constructor._schema;
@@ -46,14 +46,17 @@ export class BaseRecord {
     }
 
     constructor(props: Object = {}, node?: neo4j.types.Node) {
+        props = R.omit(this.constructor.__proxyProps, props);
+        const relations = R.filter(v => v instanceof Relation, props);
+
         // Schema validation
         const result = Joi.validate(props, this.schema);
         if (result.error) {
             throw result.error;
         }
-        props = result.value;
 
-        Object.assign(this, R.omit(this.constructor.__proxyProps, props));
+        const validated = R.merge(result.value, relations);
+        Object.assign(this, validated);
         if (node) {// $FlowFixMe
             this[s.node] = node;
         }

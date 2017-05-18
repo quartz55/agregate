@@ -1,5 +1,6 @@
 import {Record} from './index';
 import Joi from 'joi';
+import {Relation} from '../relation';
 import {Connection} from '../connection';
 import {Cypher} from '../cypher';
 import chai, {expect} from 'chai';
@@ -265,15 +266,30 @@ describe('Agregate Record', () => {
             expect(() => new SchemaLess({foo: 'baz', should: 'be', allowed: true}))
                 .to.not.throw();
         })
-        it('should enforce an empty schema', async () => {
+        it('should not mess with relations', async () => {
             class EmptySchema extends Test {
+                rel = new Relation(this, 'relation')
+
                 static schema() {
-                    return {};
+                    return {
+                        name: Joi.string()
+                    }
                 }
             }
 
-            expect(() => new EmptySchema({foo: 'baz', should: 'be', allowed: true}))
-                .to.throw('not allowed');
+            await EmptySchema.register();
+
+            let r;
+            expect(() => r = new EmptySchema({name: "Hello"}))
+                .to.not.throw();
+            await r.save();
+            r.rel.add(r);
+
+            expect(await r.rel.entries()).to.have.lengthOf(1);
+
+            const r_query = (await EmptySchema.where({name: "Hello"}))[0];
+            console.dir(r_query);
+            expect(await r_query.rel.entries()).to.have.lengthOf(1);
         })
         it('should validate defined joi schema', async () => {
             class ExampleSchema extends Test {
