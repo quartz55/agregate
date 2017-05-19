@@ -1,14 +1,13 @@
 {
   "name": "agregate",
-  "version": "0.22.7",
+  "version": "0.23.0",
   "description": "A missing piece of simple API for DB",
   "main": "build/index.js",
   "repository": "jabher/agregate",
   "scripts": {
     "test": "mocha --compilers js:babel-register --recursive",
     "build": "babel agregate --out-dir build",
-    "prepare": "npm run build",
-    "install": "npm run build",
+    "prepare": "npm i --only=dev &6 npm run build",
     "commit": "git fetch && git pull && eslint --fix agregate && [[ `git status --porcelain` ]] && git commit -m \"linting applied \" --no-edit || true && git push -u origin master",
     "preversion": "npm run test && npm run build && npm run commit",
     "postversion": "npm publish && rm -rf ./build"
