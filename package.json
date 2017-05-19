@@ -7,7 +7,6 @@
   "scripts": {
     "test": "mocha --compilers js:babel-register --recursive",
     "build": "babel agregate --out-dir build",
-    "install": "npm i --only=development &6 npm run build",
     "commit": "git fetch && git pull && eslint --fix agregate && [[ `git status --porcelain` ]] && git commit -m \"linting applied \" --no-edit || true && git push -u origin master",
     "preversion": "npm run test && npm run build && npm run commit",
     "postversion": "npm publish && rm -rf ./build"
