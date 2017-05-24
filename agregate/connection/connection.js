@@ -1,6 +1,6 @@
 // @flow
 import '../polyfill';
-import type {DBProperties} from '../types';
+import type, {DBProperties} from '../types';
 import {Driver} from './driver';
 import {Record} from '../record';
 import {Relation} from '../relation';
